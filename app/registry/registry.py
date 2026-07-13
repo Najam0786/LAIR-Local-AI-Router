@@ -1,4 +1,4 @@
-from app.providers.lmstudio import lmstudio
+from app.registry.provider_registry import provider_registry
 from app.schemas.model import ModelInfo
 
 
@@ -8,13 +8,17 @@ class ModelRegistry:
     """
 
     async def list_models(self) -> list[ModelInfo]:
-        models = await lmstudio.list_models()
+        """
+        Return all models from all registered providers.
+        """
+
+        models = await provider_registry.list_models()
 
         return [
             ModelInfo(
-                id=model["id"],
-                provider="lmstudio",
-                loaded=True,
+                id=model.id,
+                provider=model.provider,
+                loaded=model.loaded,
             )
             for model in models
         ]

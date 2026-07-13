@@ -2,22 +2,60 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """
+    Global application settings.
+    """
+
+    # ------------------------------------------------------------------
+    # Application
+    # ------------------------------------------------------------------
 
     APP_NAME: str = "LAIR"
     APP_VERSION: str = "0.1.0"
 
+    HOST: str = "127.0.0.1"
+    PORT: int = 8000
+
+    DEBUG: bool = False
+
+    # ------------------------------------------------------------------
+    # Providers
+    # ------------------------------------------------------------------
+
+    DEFAULT_PROVIDER: str = "lmstudio"
+
     LM_STUDIO_URL: str = "http://localhost:1234/v1"
+
+    OLLAMA_URL: str = "http://localhost:11434"
+
+    # ------------------------------------------------------------------
+    # Models
+    # ------------------------------------------------------------------
 
     DEFAULT_MODEL: str = ""
 
     REQUEST_TIMEOUT: int = 300
+
+    # ------------------------------------------------------------------
+    # Routing
+    # ------------------------------------------------------------------
+
+    ENABLE_CAPABILITY_ROUTING: bool = True
+
+    ENABLE_EXPLAINABILITY: bool = True
+
+    ENABLE_BENCHMARKS: bool = True
+
+    # ------------------------------------------------------------------
+    # Logging
+    # ------------------------------------------------------------------
 
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
+        extra="ignore",
     )
 
 

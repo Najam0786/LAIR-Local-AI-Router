@@ -1,22 +1,27 @@
 from abc import ABC, abstractmethod
-from typing import Any
+
+from app.models.ai_model import AIModel
 
 
 class BaseProvider(ABC):
     """
     Abstract base class for all AI providers.
+
+    Every provider must implement the same interface so that
+    LAIR can interact with them without knowing provider-specific
+    implementation details.
     """
 
     @abstractmethod
-    async def list_models(self) -> list[dict[str, Any]]:
+    async def list_models(self) -> list[AIModel]:
         """
-        Return all available models.
+        Return all AI models available from this provider.
         """
         raise NotImplementedError
 
     @abstractmethod
     async def health_check(self) -> bool:
         """
-        Check whether the provider is reachable.
+        Return True if the provider is healthy and reachable.
         """
         raise NotImplementedError
