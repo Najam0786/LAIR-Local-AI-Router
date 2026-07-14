@@ -17,6 +17,17 @@ class ProviderRegistry:
         """
         self._providers[provider.name] = provider
 
+    def get(self, name: str) -> BaseProvider:
+        """
+        Look up a registered provider by name.
+        """
+        try:
+            return self._providers[name]
+        except KeyError:
+            raise KeyError(
+                f"No provider registered with name '{name}'."
+            ) from None
+
     def list_providers(self) -> list[BaseProvider]:
         """
         Return all registered providers.

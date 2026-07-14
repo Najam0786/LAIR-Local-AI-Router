@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from app.models.ai_model import AIModel
+from app.providers.completion_result import CompletionResult
 
 
 class BaseProvider(ABC):
@@ -23,5 +24,17 @@ class BaseProvider(ABC):
     async def health_check(self) -> bool:
         """
         Return True if the provider is healthy and reachable.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def complete(
+        self,
+        model_id: str,
+        prompt: str,
+        max_tokens: int = 64,
+    ) -> CompletionResult:
+        """
+        Run a single completion against a model and measure it.
         """
         raise NotImplementedError
