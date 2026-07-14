@@ -68,3 +68,38 @@ def test_already_loaded_model_is_kept_regardless_of_estimated_ram():
     kept = filter_by_hardware([big_but_running], resource_profiles, hardware)
 
     assert kept == [big_but_running]
+
+
+def test_unloaded_model_fits_once_loaded_models_reclaimable_ram_is_counted():
+    currently_loaded = _model("currently-loaded", loaded=True)
+    swap_candidate = _model("swap-candidate", loaded=False)
+    # Only 6GB free right now, but the loaded model (15GB) would be
+    # evicted by JIT loading, so the real candidate (20GB) fits once
+    # that's accounted for (6 + 15 = 21 >= 20).
+    hardware = HardwareProfile(total_ram_gb=32.0, available_ram_gb=6.0)
+    resource_profiles = {
+        "currently-loaded": ResourceProfile(estimated_ram_gb=15.0),
+        "swap-candidate": ResourceProfile(estimated_ram_gb=20.0),
+    }
+
+    kept = filter_by_hardware(
+        [currently_loaded, swap_candidate], resource_profiles, hardware
+    )
+
+    assert kept == [currently_loaded, swap_candidate]
+
+
+def test_unloaded_model_still_rejected_if_it_would_not_fit_even_after_eviction():
+    currently_loaded = _model("currently-loaded", loaded=True)
+    too_big = _model("too-big", loaded=False)
+    hardware = HardwareProfile(total_ram_gb=32.0, available_ram_gb=2.0)
+    resource_profiles = {
+        "currently-loaded": ResourceProfile(estimated_ram_gb=15.0),
+        "too-big": ResourceProfile(estimated_ram_gb=25.0),
+    }
+
+    kept = filter_by_hardware(
+        [currently_loaded, too_big], resource_profiles, hardware
+    )
+
+    assert kept == [currently_loaded]

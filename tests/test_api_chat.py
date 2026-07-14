@@ -194,15 +194,18 @@ def test_chat_completions_stream_failure_persists_failed_outcome(
     assert "simulated stream failure" in records[-1].execution_outcome.error
 
 
-def test_chat_completions_returns_404_when_no_model_matches(
+def test_chat_completions_routes_even_when_no_model_has_the_requested_capability(
     client, registered_fake_provider
 ):
+    # Capability matching is a soft scoring preference, not a hard filter --
+    # a request for a capability no registered model has still routes to
+    # the best-available candidate rather than 404ing.
     response = client.post(
         "/v1/chat/completions",
         json={"messages": [{"role": "user", "content": "translate this to french"}]},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 200
 
 
 def test_chat_completions_provider_failure_returns_502_and_persists_outcome(

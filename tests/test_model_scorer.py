@@ -12,10 +12,12 @@ def _model(
     capabilities: list[Capability],
     supports_streaming: bool,
     context_window: int | None,
+    loaded: bool = False,
 ) -> AIModel:
     return AIModel(
         id="m",
         provider="test",
+        loaded=loaded,
         profile=CapabilityProfile(
             model_id="m",
             provider="test",
@@ -34,6 +36,27 @@ def test_scores_streaming_support():
 
     assert breakdown.streaming_score == policy.streaming_weight
     assert breakdown.total_score == policy.streaming_weight
+
+
+def test_loaded_model_gets_bonus_score():
+    policy = RoutingPolicy()
+    model = _model([], supports_streaming=False, context_window=None, loaded=True)
+
+    breakdown = model_scorer.score(model, [], policy)
+
+    assert breakdown.loaded_bonus_score == policy.loaded_bonus_weight
+    assert breakdown.total_score == policy.loaded_bonus_weight
+    assert "Already loaded" in breakdown.reasons
+
+
+def test_unloaded_model_gets_no_bonus_score():
+    policy = RoutingPolicy()
+    model = _model([], supports_streaming=False, context_window=None, loaded=False)
+
+    breakdown = model_scorer.score(model, [], policy)
+
+    assert breakdown.loaded_bonus_score == 0.0
+    assert "Already loaded" not in breakdown.reasons
 
 
 def test_scores_context_window():

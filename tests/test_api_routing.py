@@ -19,12 +19,17 @@ def test_route_happy_path(client, registered_fake_provider):
     assert plan["decision"]["reasons"]
 
 
-def test_route_returns_404_when_no_model_matches(client, registered_fake_provider):
+def test_route_routes_even_when_no_model_has_the_requested_capability(
+    client, registered_fake_provider
+):
+    # Capability matching is a soft scoring preference, not a hard filter --
+    # a request for a capability no registered model has still routes to
+    # the best-available candidate rather than 404ing.
     response = client.post(
         "/route", json={"prompt": "translate this sentence to french"}
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 200
 
 
 def test_route_excludes_model_that_exceeds_available_ram(

@@ -40,6 +40,11 @@ class ScoreBreakdown(BaseModel):
         ge=0.0,
     )
 
+    loaded_bonus_score: float = Field(
+        default=0.0,
+        ge=0.0,
+    )
+
     # ---------------------------------------------------------
     # Explainability
     # ---------------------------------------------------------

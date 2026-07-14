@@ -75,3 +75,16 @@ Trade-offs
 # Decision Summary
 
 Where a provider already knows the answer, LAIR uses it instead of guessing — and where no provider knows the answer yet, LAIR is honest about still guessing, rather than pretending otherwise.
+
+---
+
+# Update — Loaded-State Hard Filter Softened
+
+The "not-loaded models are excluded from candidates" decision above was justified by direct evidence at the time: a request to an unloaded model returned a bare HTTP 400 twice, with no graceful handling anywhere downstream. Two things changed since:
+
+1. **Milestone 6** added `ExecutionOutcome`/graceful failure handling — a failed provider call now becomes a clean `success=False` result and a proper error response, not a bare crash.
+2. **Live dogfooding (DF-006, `docs/DOGFOODING.md`)** confirmed, via repeated direct experimentation against real LM Studio, that its JIT loading + Auto-Evict reliably loads an unloaded model and evicts the previous one on request — the exact case the hard filter was previously preventing from ever being attempted.
+
+`RoutingEngine.route()` no longer excludes unloaded models from candidates. Instead, `ModelScorer` adds a soft `loaded_bonus_score` (`RoutingPolicy.loaded_bonus_weight`, default `5.0`) — an already-loaded model is preferred when candidates are otherwise close (avoiding needless swap latency), but a genuinely better-suited unloaded model can still win and trigger a JIT load. `filter_by_hardware()` was updated alongside this: an unloaded candidate's estimated RAM is now checked against available RAM *plus* whatever RAM currently-loaded models would release on eviction, not against available RAM alone — otherwise a valid swap would still be wrongly rejected as "won't fit."
+
+The original hard-filter reasoning remains accurate as historical context for why it was the right call in Milestone 5, with the data available at the time. This update reflects new evidence superseding it, not a mistake in the original decision.

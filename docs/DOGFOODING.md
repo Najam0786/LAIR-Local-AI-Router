@@ -209,3 +209,43 @@ handling downstream, which didn't exist when that filter was written.
 loosening `RoutingEngine`'s loaded-model filter in LAIR itself (revisits
 ADR-0013), now that the LM Studio side is fully validated with real,
 repeated evidence rather than assumption.
+
+---
+
+## DF-007 — Loaded-model filter loosened and shipped; live-verified, plus a second real bug found and fixed the same night
+
+**Observed:** 2026-07-15. Implemented the fix DF-006 called for:
+`RoutingEngine.route()` no longer excludes unloaded models; `ModelScorer`
+adds a soft `loaded_bonus_score` instead; `filter_by_hardware()` accounts
+for RAM reclaimable from evicting currently-loaded models. Live-verified:
+
+1. With **no model loaded**, a request through LAIR now succeeds (`200`,
+   not `404`) and correctly triggers a real JIT load.
+2. With a model loaded and a request that should prefer a different,
+   unloaded model, the hardware filter correctly *rejected* the swap when
+   real free RAM was genuinely too low (2.44 GB at that moment) --
+   confirming the safety check still works, not a regression.
+3. A **second, unrelated real bug** surfaced immediately after, live,
+   through Continue's Agent mode: a richer real message ("please debug
+   this python function and also translate this text and analyze this
+   image") returned `404` even with plenty of RAM free and models
+   available. Root cause: `CapabilityEngine.find_matching_profiles()`
+   requires a model to satisfy **every** keyword-detected requirement
+   simultaneously (AND logic) -- a longer, multi-topic message can trigger
+   several different capability requirements that no single small local
+   model satisfies all of at once, correctly-but-uselessly excluding every
+   model. Fixed the same night: `RoutingEngine.route()` no longer uses
+   `find_matching_profiles()` as a hard filter either -- capability
+   matching is now scored only (`ModelScorer` already did this correctly
+   per-requirement, no AND-logic problem there). `CapabilityEngine`
+   itself is untouched, including its own dedicated AND-matching tests --
+   only how `RoutingEngine` uses it changed.
+
+**Implication:** the same "hard filter -> soft scoring preference"
+pattern, applied twice in one session to two different filters, both
+times triggered by a real message that a synthetic test prompt would
+never have produced. Neither bug was visible until real, varied usage
+(via Continue) exercised the system the way an actual user does.
+
+**Status:** both fixes shipped, tested (75 tests passing), and
+live-verified with the exact prompts that originally failed.

@@ -20,7 +20,21 @@ def filter_by_hardware(
     estimated requirement against *remaining* free memory would wrongly
     penalize it for memory it isn't asking to allocate again. The check
     only makes sense for a model that would need fresh allocation to load.
+
+    An unloaded candidate is checked against available RAM *plus*
+    whatever RAM would be reclaimed by evicting any already-loaded
+    models -- LM Studio's JIT loading auto-evicts the previously
+    JIT-loaded model when a new one is requested, so that memory is
+    about to become free, not permanently unavailable.
     """
+
+    reclaimable_ram_gb = sum(
+        resource_profiles[model.id].estimated_ram_gb
+        for model in models
+        if model.loaded
+        and resource_profiles.get(model.id) is not None
+        and resource_profiles[model.id].estimated_ram_gb is not None
+    )
 
     kept: list[AIModel] = []
 
@@ -35,7 +49,7 @@ def filter_by_hardware(
             kept.append(model)
             continue
 
-        if profile.estimated_ram_gb <= hardware.available_ram_gb:
+        if profile.estimated_ram_gb <= hardware.available_ram_gb + reclaimable_ram_gb:
             kept.append(model)
 
     return kept

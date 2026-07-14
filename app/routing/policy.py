@@ -16,6 +16,8 @@ class RoutingPolicy(BaseModel):
 
     benchmark_weight: float = Field(default=0.1, ge=0.0)
 
+    loaded_bonus_weight: float = Field(default=5.0, ge=0.0)
+
     capability_weights: dict[CapabilityType, float] = Field(
         default_factory=lambda: {
             CapabilityType.REASONING: 15.0,

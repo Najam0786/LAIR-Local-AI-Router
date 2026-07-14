@@ -1,5 +1,3 @@
-from app.capabilities.engine import engine
-from app.capabilities.profile import CapabilityProfile
 from app.capabilities.requirement import CapabilityRequirement
 from app.hardware.filter import filter_by_hardware
 from app.hardware.hardware_provider import HardwareProvider
@@ -57,32 +55,7 @@ class RoutingEngine:
             analyzer.analyze(task.prompt)
         )
 
-        profiles: list[CapabilityProfile] = [
-            model.profile
-            for model in models
-        ]
-
-        matching_profiles = engine.find_matching_profiles(
-            requirements=requirements,
-            profiles=profiles,
-        )
-
-        matching_model_ids = {
-            profile.model_id
-            for profile in matching_profiles
-        }
-
-        candidate_models = [
-            model
-            for model in models
-            if model.id in matching_model_ids
-        ]
-
-        candidate_models = [
-            model
-            for model in candidate_models
-            if model.loaded
-        ]
+        candidate_models = models
 
         resource_profiles = {
             model.id: resource_resolver.resolve(model.id, model.metadata)

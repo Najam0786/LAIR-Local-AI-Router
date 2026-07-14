@@ -108,6 +108,17 @@ class ModelScorer:
                 )
 
         # ---------------------------------------------------------
+        # Already Loaded
+        # ---------------------------------------------------------
+
+        if model.loaded:
+            breakdown.loaded_bonus_score = policy.loaded_bonus_weight
+
+            breakdown.reasons.append(
+                "Already loaded"
+            )
+
+        # ---------------------------------------------------------
         # Final Score
         # ---------------------------------------------------------
 
@@ -116,6 +127,7 @@ class ModelScorer:
             + breakdown.streaming_score
             + breakdown.context_window_score
             + breakdown.benchmark_score
+            + breakdown.loaded_bonus_score
         )
 
         return breakdown
