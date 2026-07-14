@@ -46,6 +46,7 @@ Each ADR contains:
 | ADR-0012 | Hardware-Aware Filtering |
 | ADR-0013 | Provider Metadata Grounding |
 | ADR-0014 | Execution Runtime Boundary |
+| ADR-0015 | Runtime vs. Agent Boundary |
 
 ---
 
