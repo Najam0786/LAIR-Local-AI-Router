@@ -114,3 +114,13 @@ Trade-offs
 # Decision Summary
 
 LAIR stops being a service that only recommends and starts being one that answers — by keeping the Decision Engine pure, giving execution a thin dedicated home, and refusing to build session state, a provider adapter, or an orchestration class that nothing yet needs.
+
+---
+
+# Update (M6.1) — Streaming Added
+
+The "non-streaming only" decision above held until real dogfooding produced concrete, reproduced evidence it couldn't: Cline's "OpenAI Compatible" provider always sends `stream: true` with no setting to disable it anywhere in its UI, so it could not complete a single request against LAIR as originally shipped (`docs/DOGFOODING.md`, DF-002/DF-003). This wasn't speculative scope-creep — it was confirmed by direct reproduction before any code changed.
+
+Streaming was added following the same boundaries this ADR already established: `BaseProvider.stream_complete()` is a concrete default method (falls back to `complete()`, yielding one simulated chunk), not a new abstract method — there is still exactly one real streaming implementation (`LMStudioProvider`), so forcing every provider (including the `FakeProvider` test double) to hand-roll chunking had no real second consumer. `execution.runtime.stream_execute()` mirrors `execute()`'s "never raises" contract as a terminal `StreamEvent(error=...)` instead of a raised exception, since HTTP headers are already committed once a stream starts and status codes can no longer change. Accumulation and persistence of `DecisionRecord.execution_outcome` stayed in the API handler, not the runtime, per this ADR's existing division of responsibility — no new orchestration class was introduced.
+
+The original reasoning above (streaming is a materially larger problem than a flag, deferred deliberately) remains accurate as historical context for why it didn't ship in M6 — this update documents that the deferral ended once real evidence, not architectural taste, said it needed to.

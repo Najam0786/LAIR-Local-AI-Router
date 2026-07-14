@@ -1,16 +1,24 @@
+import time
 import uuid
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.execution.conversation import Conversation
-from app.execution.runtime import execute
+from app.execution.execution_outcome import ExecutionOutcome
+from app.execution.runtime import execute, stream_execute
 from app.models.task import Task
 from app.registry.provider_registry import provider_registry
+from app.routing.decision import DecisionRecord
 from app.routing.decision_repository import default_decision_repository
 from app.routing.routing_engine import routing_engine
 from app.routing.selector import NoCandidateModelsError
 from app.schemas.chat import (
     ChatCompletionChoice,
+    ChatCompletionChunk,
+    ChatCompletionChunkChoice,
+    ChatCompletionChunkDelta,
     ChatCompletionMessage,
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -23,17 +31,13 @@ router = APIRouter(tags=["OpenAI Compatibility"])
 
 
 @router.post("/v1/chat/completions", response_model=ChatCompletionResponse)
-async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResponse:
+async def chat_completions(
+    request: ChatCompletionRequest,
+) -> ChatCompletionResponse | StreamingResponse:
     """
     OpenAI-compatible chat completion: routes the request to the best
     local model, executes it, and returns an OpenAI-shaped response.
     """
-
-    if request.stream:
-        raise HTTPException(
-            status_code=400,
-            detail="Streaming is not supported yet.",
-        )
 
     models = await provider_registry.list_models()
 
@@ -52,6 +56,14 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
         raise HTTPException(
             status_code=404,
             detail="No suitable model found for this request.",
+        )
+
+    if request.stream:
+        return StreamingResponse(
+            _stream_chat_completion(
+                plan.decision, conversation, request.max_tokens
+            ),
+            media_type="text/event-stream",
         )
 
     result, outcome = await execute(
@@ -82,6 +94,107 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
             total_tokens=(outcome.prompt_tokens or 0) + (outcome.completion_tokens or 0),
         ),
     )
+
+
+async def _stream_chat_completion(
+    decision: DecisionRecord,
+    conversation: Conversation,
+    max_tokens: int,
+) -> AsyncIterator[str]:
+    completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+    model_id = decision.selected_model.id
+
+    def sse(chunk: ChatCompletionChunk) -> str:
+        return f"data: {chunk.model_dump_json()}\n\n"
+
+    yield sse(
+        ChatCompletionChunk(
+            id=completion_id,
+            model=model_id,
+            choices=[
+                ChatCompletionChunkChoice(
+                    delta=ChatCompletionChunkDelta(role="assistant", content="")
+                )
+            ],
+        )
+    )
+
+    full_text = ""
+    finish_reason = "stop"
+    completion_tokens: int | None = None
+    prompt_tokens: int | None = None
+    error: str | None = None
+    start = time.perf_counter()
+
+    async for event in stream_execute(
+        decision.selected_model, conversation.messages, max_tokens
+    ):
+        if event.error is not None:
+            error = event.error
+            yield sse(
+                ChatCompletionChunk(
+                    id=completion_id,
+                    model=model_id,
+                    choices=[
+                        ChatCompletionChunkChoice(
+                            delta=ChatCompletionChunkDelta(
+                                content=f"\n\n[LAIR error: {error}]"
+                            )
+                        )
+                    ],
+                )
+            )
+            break
+
+        if event.delta:
+            full_text += event.delta
+            yield sse(
+                ChatCompletionChunk(
+                    id=completion_id,
+                    model=model_id,
+                    choices=[
+                        ChatCompletionChunkChoice(
+                            delta=ChatCompletionChunkDelta(content=event.delta)
+                        )
+                    ],
+                )
+            )
+
+        if event.finish_reason:
+            finish_reason = event.finish_reason
+        if event.completion_tokens is not None:
+            completion_tokens = event.completion_tokens
+        if event.prompt_tokens is not None:
+            prompt_tokens = event.prompt_tokens
+
+    if completion_tokens is None and error is None:
+        completion_tokens = len(full_text.split())
+
+    outcome = ExecutionOutcome(
+        success=error is None,
+        latency_ms=(time.perf_counter() - start) * 1000,
+        completion_tokens=completion_tokens,
+        prompt_tokens=prompt_tokens,
+        finish_reason=finish_reason if error is None else None,
+        error=error,
+    )
+
+    default_decision_repository.record(
+        decision.model_copy(update={"execution_outcome": outcome})
+    )
+
+    yield sse(
+        ChatCompletionChunk(
+            id=completion_id,
+            model=model_id,
+            choices=[
+                ChatCompletionChunkChoice(
+                    delta=ChatCompletionChunkDelta(), finish_reason="stop"
+                )
+            ],
+        )
+    )
+    yield "data: [DONE]\n\n"
 
 
 @router.get("/v1/models", response_model=OpenAIModelListResponse)

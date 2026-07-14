@@ -9,6 +9,7 @@ from app.knowledge.knowledge_base import KnowledgeBase
 from app.models.ai_model import AIModel
 from app.providers.base import BaseProvider
 from app.providers.completion_result import CompletionResult
+from app.providers.stream_chunk import ProviderStreamChunk
 from app.registry.provider_registry import provider_registry
 from app.routing.decision_repository import DecisionRepository
 import app.api.chat as chat_api_module
@@ -46,10 +47,14 @@ class FakeProvider(BaseProvider):
         models: list[AIModel],
         completions: dict[str, CompletionResult] | None = None,
         failures: set[str] | None = None,
+        stream_chunks: dict[str, list[ProviderStreamChunk]] | None = None,
+        stream_failures: set[str] | None = None,
     ):
         self._models = models
         self._completions = completions or {}
         self._failures = failures or set()
+        self._stream_chunks = stream_chunks or {}
+        self._stream_failures = stream_failures or set()
 
     async def list_models(self) -> list[AIModel]:
         return self._models
@@ -70,6 +75,23 @@ class FakeProvider(BaseProvider):
             model_id,
             CompletionResult(text="ok", completion_tokens=8, latency_seconds=0.5),
         )
+
+    async def stream_complete(
+        self,
+        model_id: str,
+        messages: list[dict],
+        max_tokens: int = 64,
+    ):
+        if model_id in self._stream_failures:
+            raise RuntimeError(f"simulated stream failure for {model_id}")
+
+        if model_id in self._stream_chunks:
+            for chunk in self._stream_chunks[model_id]:
+                yield chunk
+            return
+
+        async for chunk in super().stream_complete(model_id, messages, max_tokens):
+            yield chunk
 
 
 def _make_model(

@@ -50,6 +50,25 @@ class ChatCompletionResponse(BaseModel):
     usage: Usage
 
 
+class ChatCompletionChunkDelta(BaseModel):
+    role: str | None = None
+    content: str | None = None
+
+
+class ChatCompletionChunkChoice(BaseModel):
+    index: int = 0
+    delta: ChatCompletionChunkDelta
+    finish_reason: str | None = None
+
+
+class ChatCompletionChunk(BaseModel):
+    id: str
+    object: str = "chat.completion.chunk"
+    created: int = Field(default_factory=lambda: int(time.time()))
+    model: str
+    choices: list[ChatCompletionChunkChoice]
+
+
 class OpenAIModelInfo(BaseModel):
     id: str
     object: str = "model"

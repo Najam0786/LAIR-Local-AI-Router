@@ -1,5 +1,7 @@
+import json
 import logging
 import time
+from collections.abc import AsyncIterator
 
 import httpx
 
@@ -9,6 +11,7 @@ from app.models.ai_model import AIModel
 from app.providers.base import BaseProvider
 from app.providers.completion_result import CompletionResult
 from app.providers.model_metadata import ModelMetadata
+from app.providers.stream_chunk import ProviderStreamChunk
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +149,51 @@ class LMStudioProvider(BaseProvider):
             prompt_tokens=data.get("usage", {}).get("prompt_tokens"),
             finish_reason=data["choices"][0].get("finish_reason"),
         )
+
+    async def stream_complete(
+        self,
+        model_id: str,
+        messages: list[dict],
+        max_tokens: int = 64,
+    ) -> AsyncIterator[ProviderStreamChunk]:
+        payload = {
+            "model": model_id,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with client.stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                json=payload,
+            ) as response:
+                response.raise_for_status()
+
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+
+                    data_str = line[len("data: ") :]
+
+                    if data_str == "[DONE]":
+                        break
+
+                    event = json.loads(data_str)
+                    usage = event.get("usage")
+                    choices = event.get("choices") or []
+                    choice = choices[0] if choices else {}
+
+                    yield ProviderStreamChunk(
+                        delta=choice.get("delta", {}).get("content", ""),
+                        finish_reason=choice.get("finish_reason"),
+                        completion_tokens=(
+                            usage.get("completion_tokens") if usage else None
+                        ),
+                        prompt_tokens=usage.get("prompt_tokens") if usage else None,
+                    )
 
 
 lmstudio = LMStudioProvider()
