@@ -358,6 +358,28 @@ Contributors should strive to:
 
 ---
 
+# LAIR Evolution Principle
+
+New abstractions, layers, schemas, interfaces, and processes are introduced
+only once multiple concrete use cases demonstrate a real need — not because
+an idea sounds reasonable, sounds "almost free," or might matter someday.
+The project prefers evolutionary design over speculative architecture.
+
+Before adding any new class, layer, interface, data field, or process, ask:
+**does this have a real, concrete second consumer today, or is it for a
+hypothetical future case?** If the honest answer is "not yet," defer it and
+note what would justify revisiting it — don't build it ahead of the need.
+
+This has been applied consistently to code (rejecting a persisted Session
+Manager, a separate ProviderAdapter layer, and a formal Application Service
+class), to data (rejecting an `actual_model_used` field with no fallback
+mechanism to justify it), to process (rejecting a formal "Dogfooding
+Milestone" in favor of a plain log file), and to documentation itself
+(rejecting a rigid observation template before enough real entries existed
+to show what structure, if any, is actually needed).
+
+---
+
 # Long-Term Goal
 
 The engineering process should remain predictable as LAIR grows from a personal project into a mature open-source platform.
