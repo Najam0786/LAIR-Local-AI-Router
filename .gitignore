@@ -87,6 +87,7 @@ logs/*
 
 benchmarks/results/
 benchmarks/reports/
+benchmarks/knowledge_base.json
 
 ############################################################
 # Temporary Files
@@ -127,9 +128,9 @@ repository_tree.txt
 # AI Models (if stored locally)
 ############################################################
 
-models/
-weights/
-checkpoints/
+/models/
+/weights/
+/checkpoints/
 
 ############################################################
 # Cache

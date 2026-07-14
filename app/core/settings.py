@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
 
     APP_NAME: str = "LAIR"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "0.2.0-alpha"
 
     HOST: str = "127.0.0.1"
     PORT: int = 8000
