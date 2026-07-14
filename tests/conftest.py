@@ -11,6 +11,8 @@ from app.providers.base import BaseProvider
 from app.providers.completion_result import CompletionResult
 from app.registry.provider_registry import provider_registry
 from app.routing.decision_repository import DecisionRepository
+import app.api.chat as chat_api_module
+import app.api.routing as routing_api_module
 import app.routing.routing_engine as routing_engine_module
 from main import app
 
@@ -58,7 +60,7 @@ class FakeProvider(BaseProvider):
     async def complete(
         self,
         model_id: str,
-        prompt: str,
+        messages: list[dict],
         max_tokens: int = 64,
     ) -> CompletionResult:
         if model_id in self._failures:
@@ -153,13 +155,22 @@ def isolated_stores(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         routing_engine_module,
-        "default_decision_repository",
-        DecisionRepository(path=tmp_path / "decisions.json"),
-    )
-    monkeypatch.setattr(
-        routing_engine_module,
         "default_hardware_provider",
         FakeHardwareProvider(),
+    )
+
+    isolated_decision_repository = DecisionRepository(
+        path=tmp_path / "decisions.json"
+    )
+    monkeypatch.setattr(
+        routing_api_module,
+        "default_decision_repository",
+        isolated_decision_repository,
+    )
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_decision_repository",
+        isolated_decision_repository,
     )
 
 

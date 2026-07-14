@@ -12,9 +12,10 @@ class DecisionRepository:
     """
     Append-only log of routing decisions.
 
-    Written by the Decision Engine after every decision; read by the
-    future Learning Engine and audit/dashboard tooling -- never read
-    by the Decision Engine itself.
+    Written by the API layer after each decision (and, for executed
+    requests, after the outcome is known); read by the future Learning
+    Engine and audit/dashboard tooling -- never read or written by the
+    Decision Engine itself, which stays a pure computation.
     """
 
     def __init__(self, path: Path | str = _DEFAULT_PATH):

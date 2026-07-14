@@ -45,6 +45,7 @@ Each ADR contains:
 | ADR-0011 | Graceful Degradation |
 | ADR-0012 | Hardware-Aware Filtering |
 | ADR-0013 | Provider Metadata Grounding |
+| ADR-0014 | Execution Runtime Boundary |
 
 ---
 
@@ -59,3 +60,4 @@ Examples:
 - Memory Architecture
 - Multi-Agent Execution
 - Decision Graph
+- Streaming Execution (M6.1)

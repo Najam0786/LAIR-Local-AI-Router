@@ -33,6 +33,11 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 - `docs/adr/ADR-0005-benchmark-driven-routing.md`, `docs/adr/ADR-0010-decision-persistence.md`, `docs/adr/ADR-0011-graceful-degradation.md`, and `docs/adr/ADR-0012-hardware-aware-filtering.md`
 - `ModelMetadata` — provider-agnostic model metadata (`app/providers/model_metadata.py`); `LMStudioProvider` now reads LM Studio's native `/api/v0/models` API (real vision/embedding type, tool-use capability, quantization, loaded state, context length), with graceful fallback to the original `/v1/models` call when unavailable (ADR-0013)
 - `docs/adr/ADR-0013-provider-metadata-grounding.md`
+- `POST /v1/chat/completions` and `GET /v1/models` — OpenAI-compatible execution endpoints. Any OpenAI-compatible client (Continue, Cline, Cursor, Open WebUI) can now point its base URL at LAIR instead of LM Studio directly and get automatic routing for free. Non-streaming; a `stream: true` request returns `400` rather than being silently ignored (ADR-0014)
+- `app/execution/` package: `Conversation`/`ChatMessage` (request-scoped, stateless value objects parsed from the incoming `messages[]` array — no server-side session state, matching how every target client already resends full history per request), `ExecutionOutcome`, and `runtime.execute()` (invokes the routed provider, translates `CompletionResult` into an `ExecutionOutcome`, never raises)
+- `DecisionRecord.execution_outcome` — populated for executed (chat) requests, `None` for decide-only (`/route`) requests; the first real-traffic data available to a future Learning Engine, distinct from benchmark data
+- `CompletionResult.prompt_tokens` / `.finish_reason` — populated from data LM Studio's response already contained but the code previously discarded
+- `docs/adr/ADR-0014-execution-runtime-boundary.md`
 
 ### Changed
 
@@ -44,6 +49,8 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 - Capability scoring now reads weights from `RoutingPolicy.capability_weights` instead of the standalone `CAPABILITY_WEIGHTS` constant and `Settings` fields — same values, single source of truth, not a scoring regression.
 - `CapabilityResolver`/`ResourceResolver` now ground VISION/EMBEDDING/TOOL_USE/`context_window`/resource estimates in real LM Studio metadata when available, falling back to the original heuristics otherwise — REASONING/CODING/TRANSLATION/SUMMARIZATION remain heuristic (no data source exists for them).
 - `AIModel.loaded` now reflects the provider's real reported state instead of always being hardcoded `True`; not-loaded models are excluded from routing candidates.
+- **Breaking (internal):** `BaseProvider.complete()` now takes `messages: list[dict]` instead of a flat `prompt: str` — preserves full multi-turn conversation context through to the provider instead of collapsing it into a single message. Touches `LMStudioProvider`, `BenchmarkRunner`'s call site, and `FakeProvider`.
+- `RoutingEngine.route()` no longer persists — it dropped its `decision_repository` parameter and the `DecisionRepository.record()` call, becoming a pure computation (analyze → filter → score → select → return). Persistence now happens explicitly in the API handlers (`app/api/routing.py`, `app/api/chat.py`) that call it.
 
 ### Fixed
 

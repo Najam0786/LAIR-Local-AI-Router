@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field, computed_field
 
 from app.capabilities.requirement import CapabilityRequirement
+from app.execution.execution_outcome import ExecutionOutcome
 from app.models.ai_model import AIModel
 from app.models.task import Task
 from app.routing.policy import RoutingPolicy
@@ -37,6 +38,8 @@ class DecisionRecord(BaseModel):
     decided_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
+    execution_outcome: ExecutionOutcome | None = None
 
     def _winner(self) -> ScoredCandidate:
         for candidate in self.candidates:

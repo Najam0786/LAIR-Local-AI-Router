@@ -40,7 +40,7 @@ class BenchmarkRunner:
                 provider = self._provider_registry.get(model.provider)
                 completion = await provider.complete(
                     model.id,
-                    prompt,
+                    [{"role": "user", "content": prompt}],
                     max_tokens=max_tokens,
                 )
             except Exception as exc:

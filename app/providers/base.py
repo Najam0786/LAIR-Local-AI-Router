@@ -31,7 +31,7 @@ class BaseProvider(ABC):
     async def complete(
         self,
         model_id: str,
-        prompt: str,
+        messages: list[dict],
         max_tokens: int = 64,
     ) -> CompletionResult:
         """

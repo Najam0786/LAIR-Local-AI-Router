@@ -11,3 +11,7 @@ class CompletionResult(BaseModel):
     completion_tokens: int = Field(ge=0)
 
     latency_seconds: float = Field(ge=0.0)
+
+    prompt_tokens: int | None = Field(default=None, ge=0)
+
+    finish_reason: str | None = None

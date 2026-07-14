@@ -109,12 +109,12 @@ class LMStudioProvider(BaseProvider):
     async def complete(
         self,
         model_id: str,
-        prompt: str,
+        messages: list[dict],
         max_tokens: int = 64,
     ) -> CompletionResult:
         payload = {
             "model": model_id,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "max_tokens": max_tokens,
             "stream": False,
         }
@@ -143,6 +143,8 @@ class LMStudioProvider(BaseProvider):
             text=text,
             completion_tokens=completion_tokens,
             latency_seconds=latency_seconds,
+            prompt_tokens=data.get("usage", {}).get("prompt_tokens"),
+            finish_reason=data["choices"][0].get("finish_reason"),
         )
 
 

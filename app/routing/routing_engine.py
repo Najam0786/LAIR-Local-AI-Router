@@ -9,10 +9,6 @@ from app.hardware.resource_resolver import resource_resolver as default_resource
 from app.knowledge.knowledge_base import KnowledgeBase, default_knowledge_base
 from app.models.ai_model import AIModel
 from app.models.task import Task
-from app.routing.decision_repository import (
-    DecisionRepository,
-    default_decision_repository,
-)
 from app.routing.execution_plan import ExecutionPlan, ExecutionStep
 from app.routing.policy import RoutingPolicy, default_policy
 from app.routing.request_analyzer import analyzer
@@ -33,7 +29,6 @@ class RoutingEngine:
         models: list[AIModel],
         policy: RoutingPolicy | None = None,
         knowledge_base: KnowledgeBase | None = None,
-        decision_repository: DecisionRepository | None = None,
         hardware_provider: HardwareProvider | None = None,
         resource_resolver: ResourceResolver | None = None,
     ) -> ExecutionPlan:
@@ -46,11 +41,6 @@ class RoutingEngine:
             knowledge_base
             if knowledge_base is not None
             else default_knowledge_base
-        )
-        decision_repository = (
-            decision_repository
-            if decision_repository is not None
-            else default_decision_repository
         )
         hardware_provider = (
             hardware_provider
@@ -114,8 +104,6 @@ class RoutingEngine:
             policy,
             knowledge_base,
         )
-
-        decision_repository.record(decision)
 
         step = ExecutionStep(
             role="primary",

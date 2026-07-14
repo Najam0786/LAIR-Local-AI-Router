@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.models.task import Task
 from app.registry.provider_registry import provider_registry
+from app.routing.decision_repository import default_decision_repository
 from app.routing.routing_engine import routing_engine
 from app.routing.selector import NoCandidateModelsError
 from app.schemas.routing import RoutingRequest, RoutingResponse
@@ -36,5 +37,7 @@ async def route_request(request: RoutingRequest) -> RoutingResponse:
             status_code=404,
             detail="No suitable model found for this request.",
         )
+
+    default_decision_repository.record(plan.decision)
 
     return RoutingResponse(plan=plan)
