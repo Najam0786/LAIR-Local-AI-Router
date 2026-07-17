@@ -250,6 +250,9 @@ Open
 http://localhost:8000/docs
 ```
 
+For LM Studio setup, connecting a chat client (e.g. Continue), configuration
+options, and troubleshooting, see **[INSTRUCTIONS.md](INSTRUCTIONS.md)**.
+
 ---
 
 # Engineering Philosophy

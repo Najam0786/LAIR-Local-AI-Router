@@ -28,6 +28,14 @@ class Settings(BaseSettings):
 
     OLLAMA_URL: str = "http://localhost:11434"
 
+    ENABLE_LM_STUDIO_AUTOSTART: bool = True
+
+    LMS_CLI_PATH: str = "lms"
+
+    LMS_PROBE_TIMEOUT_SECONDS: int = 3
+
+    LMS_RECOVERY_TIMEOUT_SECONDS: int = 60
+
     # ------------------------------------------------------------------
     # Models
     # ------------------------------------------------------------------
