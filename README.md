@@ -73,6 +73,7 @@ Every item below is implemented, tested, and merged — not a roadmap aspiration
 - `lair doctor` profiles your machine (RAM, GPU, SSD speed) and recommends a tiered model portfolio
 - `lair install` writes IDE client configs (Continue, with more clients planned) pointing at LAIR automatically
 - OpenAI-compatible `/v1/chat/completions` and `/v1/models`, including streaming — works with Continue, Cline, or any OpenAI-compatible client today
+- A local web UI (`web/`) — streaming chat, voice in/out, document drag-and-drop, conversation history, and a live routing panel showing per-candidate scores and provenance for every request
 
 **Memory, documents & voice**
 - Persistent, per-project local memory (`lair memory`) — LAIR remembers durable facts/preferences across sessions and tools, fully local, off by default, fully inspectable and revocable
@@ -121,6 +122,7 @@ LAIR/
 
 ├── app/            application code (routing, providers, models, execution, memory, RAG, voice)
 ├── lair/           CLI package (doctor, install, memory, voice, community)
+├── web/            local web UI -- React + Vite + TypeScript (chat, voice, documents, routing panel)
 ├── scripts/        utility scripts (benchmarks, compactify research pipeline)
 ├── benchmarks/
 ├── configs/        portfolios, pricing, language strengths, community scores, compact models
@@ -188,6 +190,7 @@ Documentation includes:
 - LM Studio (local inference backend)
 - `fastembed` (local embeddings for memory/RAG/cache — ONNX Runtime, no torch)
 - `langdetect` (language-aware routing)
+- React, Vite, TypeScript, Tailwind CSS (`web/` — local web UI, talks directly to the API above)
 
 Optional extras:
 
@@ -303,6 +306,25 @@ python -m lair memory list|show|forget|export SCOPE   # inspect/manage project m
 python -m lair voice --input in.wav --output out.wav  # file-based voice round trip
 python -m lair community export --tier TIER           # anonymized benchmark export
 ```
+
+---
+
+# Web UI
+
+A local web client lives in `web/` — streaming chat, voice in/out, drag-and-drop
+documents, conversation history, and a live routing panel showing exactly how
+each request was scored (candidates, per-factor provenance, confidence).
+
+With the backend already running (`uvicorn main:app --reload`):
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open the URL Vite prints (typically `http://localhost:5173`). See
+[web/README.md](web/README.md) for details.
 
 ---
 

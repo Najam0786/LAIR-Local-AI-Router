@@ -177,8 +177,14 @@ async def chat_completions(
         )
 
     conversation = Conversation(messages=request.messages)
+
+    try:
+        latest_user_message = conversation.latest_user_message()
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     task = Task(
-        prompt=conversation.latest_user_message(),
+        prompt=latest_user_message,
         conversation_turns=len(conversation.messages),
     )
 

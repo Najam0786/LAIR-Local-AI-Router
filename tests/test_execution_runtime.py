@@ -2,6 +2,7 @@ import asyncio
 
 from app.execution.conversation import ChatMessage
 from app.execution.runtime import execute
+from app.execution.ttl_policy import SPECIALIST_TTL_SECONDS
 from app.providers.completion_result import CompletionResult
 from tests.conftest import FAKE_MODELS, FakeProvider
 
@@ -60,4 +61,4 @@ def test_execute_passes_role_appropriate_ttl_to_provider(clean_registry):
         execute(model, [ChatMessage(role="user", content="hi")], max_tokens=64)
     )
 
-    assert provider.last_ttl_seconds == 300
+    assert provider.last_ttl_seconds == SPECIALIST_TTL_SECONDS

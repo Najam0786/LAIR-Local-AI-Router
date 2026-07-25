@@ -8,8 +8,15 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 
 ## [Unreleased]
 
+### Added
+
+- `web/` — a local web UI (React + Vite + TypeScript + Tailwind) talking directly to LAIR's existing API: streaming chat with markdown rendering, voice in/out (hands-free — a voice-originated message gets an auto-spoken reply, a typed one stays text-only), drag-and-drop document upload/selection, conversation history (browser-local only — LAIR's server stays stateless), and a live routing panel driven by `POST /route` showing every candidate model's full score breakdown with per-factor provenance tags.
+
 ### Changed
 
+- `SpeechToText`'s default `VOICE_STT_MODEL_SIZE` bumped from `"base"` to `"small"` — `base` was mis-transcribing short domain acronyms often enough to change meaning (observed: "RAG" heard as "rank"), `small` is meaningfully more accurate while still light enough for CPU use.
+- `TtlPolicy.SPECIALIST_TTL_SECONDS` raised from `300` to `1800` (DF-007) — 5 minutes was shorter than normal think-time between messages in an interactive session, so the single-slot scheduler kept evicting and JIT-reloading large models mid-conversation; the reload, not inference, was the dominant source of perceived latency.
+- `POST /v1/chat/completions` now returns `422` (was an unhandled `500`) when the request has no `user`-role message.
 - Bumped `Settings.APP_VERSION` to `0.3.0-alpha`, reflecting Intelligent Routing's completion and all 20 Innovation Plan entries (Waves 1-5) shipping.
 - Rewrote `README.md` and `INSTRUCTIONS.md` to describe the actually-shipped feature set (routing/explainability, cost/efficiency, onboarding, memory/documents/voice, community/research) instead of the pre-implementation aspirational copy; added a `CLI` section and per-feature getting-started subsections (documents, project memory, voice, cloud escalation).
 - Fixed a stale-file mismatch: `docs/INNOVATION_PLAN_2026.md` (the file `CLAUDE.md` names as canonical) had been left at an old 87-line v1.0 draft while the real, current v2.0 plan (Waves 1-5, all 20 entries) sat at the repository root by mistake. Moved the real plan into `docs/`, removed the stray root-level duplicate, and added an "Implementation Status" section recording what shipped and the two honestly-scoped exceptions (I-16, I-19).

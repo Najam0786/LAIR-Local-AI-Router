@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Manual dark-mode toggle: `dark:` classes respond to a `.dark` class
+   on <html> (set by useTheme), not just OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphic backdrop wash: saturated, slowly drifting color blobs
+   behind the translucent panels, fixed so it doesn't scroll with
+   content. Three hues (not two) plus motion, per "more colorful and
+   interactive" feedback -- static two-tone pastel read as washed out. */
+.glass-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: #eef0fb;
+}
+
+.dark .glass-backdrop {
+  background: #07070d;
+}
+
+.glass-backdrop::before,
+.glass-backdrop::after {
+  content: "";
+  position: absolute;
+  width: 65vw;
+  height: 65vw;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  animation: drift 22s ease-in-out infinite alternate;
+}
+
+.glass-backdrop::before {
+  top: -25%;
+  left: -15%;
+  background: radial-gradient(circle, #a855f7, transparent 70%);
+}
+
+.glass-backdrop::after {
+  bottom: -30%;
+  right: -15%;
+  background: radial-gradient(circle, #ec4899, transparent 70%);
+  animation-delay: -11s;
+  animation-direction: alternate-reverse;
+}
+
+.glass-backdrop-accent {
+  position: absolute;
+  top: 30%;
+  left: 40%;
+  width: 45vw;
+  height: 45vw;
+  border-radius: 9999px;
+  filter: blur(85px);
+  opacity: 0.4;
+  background: radial-gradient(circle, #06b6d4, transparent 70%);
+  animation: drift 18s ease-in-out infinite alternate;
+  animation-delay: -6s;
+}
+
+.dark .glass-backdrop::before,
+.dark .glass-backdrop::after,
+.dark .glass-backdrop-accent {
+  opacity: 0.3;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(4%, 6%) scale(1.08);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes blink-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-caret::after {
+  content: "\2589";
+  display: inline-block;
+  margin-left: 1px;
+  animation: blink-caret 1s step-end infinite;
+}
+
+@keyframes mic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(244, 63, 94, 0);
+  }
+}
+
+.mic-recording {
+  animation: mic-pulse 1.4s ease-out infinite;
+}

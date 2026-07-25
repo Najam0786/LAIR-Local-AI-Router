@@ -8,7 +8,11 @@ GENERALIST_TTL_SECONDS = 3600
 
 # Shorter TTL for large specialist models: release their RAM promptly
 # once idle instead of holding it until the next JIT load evicts them.
-SPECIALIST_TTL_SECONDS = 300
+# 30 minutes, not 5 (DF-007): 5 minutes was shorter than normal IDE
+# think-time between messages, so an interactive session kept evicting
+# and JIT-reloading a 20-35GB model mid-conversation -- the reload, not
+# inference, was the dominant source of perceived latency in Continue.
+SPECIALIST_TTL_SECONDS = 1800
 
 # Below this estimated footprint, a model is treated as this machine's
 # fast/generalist role regardless of which specific model it is.

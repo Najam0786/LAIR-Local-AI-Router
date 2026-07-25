@@ -35,6 +35,21 @@ def test_chat_completions_without_providers_returns_503(client, clean_registry):
     assert response.status_code == 503
 
 
+def test_chat_completions_without_user_message_returns_422(
+    client, registered_fake_provider
+):
+    response = client.post(
+        "/v1/chat/completions",
+        json={
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+            ]
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_chat_completions_happy_path(client, registered_fake_provider):
     response = client.post(
         "/v1/chat/completions",

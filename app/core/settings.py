@@ -181,7 +181,10 @@ class Settings(BaseSettings):
     # files) isn't present -- never a crash.
     # ------------------------------------------------------------------
 
-    VOICE_STT_MODEL_SIZE: str = "base"
+    # "base" mis-transcribes short domain acronyms often enough to
+    # change meaning (e.g. "RAG" heard as "rank"/"red") -- "small" is a
+    # meaningfully more accurate model, still light enough for CPU use.
+    VOICE_STT_MODEL_SIZE: str = "small"
 
     VOICE_STT_DEVICE: str = "cpu"
 

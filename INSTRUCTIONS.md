@@ -199,6 +199,25 @@ LAIR's routing engine decides which model actually handles the request.
 
 ---
 
+## 7. (Optional) Try the web UI
+
+Instead of (or alongside) an IDE client, `web/` has a local web chat client
+with streaming, voice in/out, document drag-and-drop, conversation history,
+and a live panel showing exactly how each request was routed and scored.
+With LAIR already running:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open the URL Vite prints (typically `http://localhost:5173`). See
+[web/README.md](web/README.md) for details. Conversation history is stored
+only in your browser — LAIR's server itself stays stateless either way.
+
+---
+
 ## How the auto-start works
 
 LAIR uses LM Studio's own CLI (`lms`, installed automatically alongside LM
