@@ -1,0 +1,10 @@
+# Optional voice interface extra (I-11). Not installed by default --
+# install with: pip install -r requirements-voice.txt
+#
+# faster-whisper needs `av` (audio decoding) and `ctranslate2` (its
+# inference backend); kokoro-onnx needs `phonemizer`/`espeakng_loader`
+# (a pip-bundled espeak-ng, no system package required) for text-to-
+# phoneme conversion. Everything here is pip-installable -- no system
+# binaries beyond what these wheels already bundle.
+faster-whisper==1.2.1
+kokoro-onnx==0.5.0

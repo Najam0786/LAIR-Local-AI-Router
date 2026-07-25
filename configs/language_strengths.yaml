@@ -1,0 +1,57 @@
+# Declared (not measured) multilingual capability per model-id
+# substring (case-insensitive), sourced from published model cards --
+# no provider exposes this as live metadata. See
+# docs/INNOVATION_PLAN_2026.md I-10 / section 1.2.
+#
+# Language codes are the ISO 639-1-ish codes `langdetect` returns.
+# User-editable: extend as the local model portfolio changes.
+
+model_language_strengths:
+  qwen:
+    - en
+    - zh-cn
+    - zh-tw
+    - es
+    - fr
+    - de
+    - ar
+    - hi
+    - pt
+    - ru
+    - ja
+    - ko
+  gemma:
+    - en
+    - zh-cn
+    - es
+    - fr
+    - de
+    - ar
+    - hi
+    - pt
+    - ru
+    - ja
+    - ko
+    - it
+  llama:
+    - en
+    - es
+    - fr
+    - de
+    - it
+    - pt
+    - hi
+    - th
+  phi:
+    - en
+    - zh-cn
+    - es
+    - fr
+    - de
+    - ar
+    - hi
+  deepseek:
+    - en
+    - zh-cn
+  smollm:
+    - en

@@ -1,0 +1,31 @@
+# Portfolio for the ENTRY hardware tier (<=8GB RAM, usable GPU present).
+# See docs/INNOVATION_PLAN_2026.md I-02 / section 1.2.
+
+tier: entry
+description: >-
+  8GB RAM or less -- small, fast models that fit comfortably with
+  headroom left for the OS and other apps.
+default_context_length: 4096
+# int8 KV roughly doubles usable context in a fixed memory budget on
+# this tier (docs/INNOVATION_PLAN_2026.md I-17 / section 1.8) --
+# recommended in LM Studio's load settings, not set remotely by LAIR.
+kv_cache_recommendation: int8
+models:
+  - name: "Phi-4-mini 3.8B"
+    lm_studio_search: "phi-4-mini"
+    role: generalist
+    notes: "Best small reasoner, CPU-friendly, ~3GB at Q4."
+  - name: "Gemma 3n E4B"
+    lm_studio_search: "gemma-3n-e4b"
+    role: multimodal
+    notes: >-
+      Selective activation gives ~8B capacity at ~4B footprint;
+      140+ languages.
+  - name: "Qwen3.5-4B"
+    lm_studio_search: "qwen3.5-4b"
+    role: generalist
+    notes: "Apache 2.0, 262K context, multilingual, native image understanding."
+  - name: "SmolLM3-3B"
+    lm_studio_search: "smollm3-3b"
+    role: reasoning
+    notes: "Fully open, dual-mode /think reasoning."

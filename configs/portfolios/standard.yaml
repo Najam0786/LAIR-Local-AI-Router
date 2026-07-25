@@ -1,0 +1,28 @@
+# Portfolio for the STANDARD hardware tier (~16GB RAM, usable GPU present).
+# See docs/INNOVATION_PLAN_2026.md I-02 / section 1.2.
+
+tier: standard
+description: >-
+  Around 16GB RAM -- room for a strong all-rounder plus a dedicated
+  coder and reasoner.
+default_context_length: 8192
+# Enough headroom on this tier to keep full fp16 KV precision
+# (docs/INNOVATION_PLAN_2026.md I-17).
+kv_cache_recommendation: fp16
+models:
+  - name: "Qwen3 7-8B"
+    lm_studio_search: "qwen3-8b"
+    role: coding
+    notes: "Best small coder in this tier."
+  - name: "Llama 3.3 8B"
+    lm_studio_search: "llama-3.3-8b"
+    role: generalist
+    notes: "Best all-rounder."
+  - name: "Phi-4 14B"
+    lm_studio_search: "phi-4"
+    role: reasoning
+    notes: "84.8% MMLU, runs on a 12GB GPU."
+  - name: "DeepSeek-R1-Distill-Qwen-7B"
+    lm_studio_search: "deepseek-r1-distill-qwen-7b"
+    role: reasoning
+    notes: "Distilled reasoning at a size this tier can afford."

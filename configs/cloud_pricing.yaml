@@ -1,0 +1,27 @@
+# Cloud-equivalent pricing table for LAIR's Savings Dashboard (I-01).
+#
+# `classes` holds per-1M-token USD prices for representative cloud tiers.
+# `model_classes` maps a local model id substring (case-insensitive) to one
+# of those classes. Unmatched models fall back to a parameter-count
+# heuristic in app/costs/pricing.py; if that also fails to parse a size,
+# savings are reported as null rather than guessed.
+#
+# User-editable: add or adjust entries as your local portfolio changes.
+
+classes:
+  gpt4_class:
+    input_per_1m_usd: 5.00
+    output_per_1m_usd: 15.00
+  claude_class:
+    input_per_1m_usd: 3.00
+    output_per_1m_usd: 15.00
+  budget_class:
+    input_per_1m_usd: 0.15
+    output_per_1m_usd: 0.60
+
+model_classes:
+  qwen3.6-35b-a3b: gpt4_class
+  deepseek-r1-distill-qwen-32b: gpt4_class
+  gemma-4-26b-a4b: claude_class
+  qwen2.5-vl-7b: budget_class
+  qwen3-8b: budget_class

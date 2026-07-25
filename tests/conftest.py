@@ -1,0 +1,269 @@
+import pytest
+from fastapi.testclient import TestClient
+
+from app.cache.response_cache import ResponseCache
+from app.memory.store import MemoryStore
+from app.routing.complexity_classifier import (
+    ClassificationCache,
+    ModelAssistedComplexityClassifier,
+)
+from app.capabilities.capability import Capability, CapabilityType
+from app.capabilities.profile import CapabilityProfile
+from app.hardware.hardware_profile import HardwareProfile
+from app.hardware.hardware_provider import HardwareProvider
+from app.costs.budget import CloudBudgetLedger
+from app.costs.ledger import SavingsLedger
+from app.knowledge.knowledge_base import KnowledgeBase
+from app.models.ai_model import AIModel
+from app.providers.base import BaseProvider
+from app.providers.completion_result import CompletionResult
+from app.providers.stream_chunk import ProviderStreamChunk
+from app.registry.provider_registry import provider_registry
+from app.routing.decision_repository import DecisionRepository
+import app.api.chat as chat_api_module
+import app.api.routing as routing_api_module
+import app.api.savings as savings_api_module
+import app.routing.cloud_escalation as cloud_escalation_module
+import app.routing.routing_engine as routing_engine_module
+from main import app
+
+
+class FakeHardwareProvider(HardwareProvider):
+    """
+    Test double reporting a fixed, generous HardwareProfile so tests
+    never depend on this machine's actual, currently-in-use RAM.
+    """
+
+    def __init__(self, profile: HardwareProfile | None = None):
+        self._profile = profile or HardwareProfile(
+            total_ram_gb=1000.0,
+            available_ram_gb=1000.0,
+            gpu_vram_gb=None,
+        )
+
+    def detect(self) -> HardwareProfile:
+        return self._profile
+
+
+class FakeProvider(BaseProvider):
+    """
+    Test double standing in for a real inference backend.
+    """
+
+    name = "fake"
+
+    def __init__(
+        self,
+        models: list[AIModel],
+        completions: dict[str, CompletionResult] | None = None,
+        failures: set[str] | None = None,
+        stream_chunks: dict[str, list[ProviderStreamChunk]] | None = None,
+        stream_failures: set[str] | None = None,
+    ):
+        self._models = models
+        self._completions = completions or {}
+        self._failures = failures or set()
+        self.last_ttl_seconds: int | None = None
+        self._stream_chunks = stream_chunks or {}
+        self._stream_failures = stream_failures or set()
+
+    async def list_models(self) -> list[AIModel]:
+        return self._models
+
+    async def health_check(self) -> bool:
+        return True
+
+    async def complete(
+        self,
+        model_id: str,
+        messages: list[dict],
+        max_tokens: int = 64,
+        ttl_seconds: int | None = None,
+    ) -> CompletionResult:
+        self.last_ttl_seconds = ttl_seconds
+
+        if model_id in self._failures:
+            raise RuntimeError(f"simulated failure for {model_id}")
+
+        return self._completions.get(
+            model_id,
+            CompletionResult(text="ok", completion_tokens=8, latency_seconds=0.5),
+        )
+
+    async def stream_complete(
+        self,
+        model_id: str,
+        messages: list[dict],
+        max_tokens: int = 64,
+        ttl_seconds: int | None = None,
+    ):
+        self.last_ttl_seconds = ttl_seconds
+
+        if model_id in self._stream_failures:
+            raise RuntimeError(f"simulated stream failure for {model_id}")
+
+        if model_id in self._stream_chunks:
+            for chunk in self._stream_chunks[model_id]:
+                yield chunk
+            return
+
+        async for chunk in super().stream_complete(
+            model_id, messages, max_tokens, ttl_seconds
+        ):
+            yield chunk
+
+
+def _make_model(
+    model_id: str,
+    capabilities: list[CapabilityType],
+    context_window: int | None,
+    supports_streaming: bool = True,
+) -> AIModel:
+    return AIModel(
+        id=model_id,
+        provider="fake",
+        profile=CapabilityProfile(
+            model_id=model_id,
+            provider="fake",
+            capabilities=[Capability(type=c) for c in capabilities],
+            context_window=context_window,
+            supports_streaming=supports_streaming,
+        ),
+    )
+
+
+FAKE_MODELS = [
+    _make_model("qwen3-8b", [CapabilityType.TEXT_GENERATION], context_window=8192),
+    _make_model(
+        "qwen2.5-coder-32b",
+        [CapabilityType.TEXT_GENERATION, CapabilityType.CODING],
+        context_window=32768,
+    ),
+    _make_model(
+        "deepseek-r1-distill-qwen-32b",
+        [CapabilityType.TEXT_GENERATION, CapabilityType.REASONING],
+        context_window=65536,
+    ),
+    _make_model(
+        "qwen2.5-vl-7b",
+        [CapabilityType.TEXT_GENERATION, CapabilityType.VISION],
+        context_window=4096,
+        supports_streaming=False,
+    ),
+]
+
+
+@pytest.fixture
+def fake_provider() -> FakeProvider:
+    return FakeProvider(list(FAKE_MODELS))
+
+
+@pytest.fixture
+def clean_registry():
+    """
+    Empties the process-global provider registry for the duration
+    of a test, then restores whatever was registered before.
+    """
+
+    original = dict(provider_registry._providers)
+    provider_registry._providers.clear()
+
+    yield provider_registry
+
+    provider_registry._providers.clear()
+    provider_registry._providers.update(original)
+
+
+@pytest.fixture
+def registered_fake_provider(clean_registry, fake_provider) -> FakeProvider:
+    clean_registry.register(fake_provider)
+    return fake_provider
+
+
+@pytest.fixture(autouse=True)
+def isolated_stores(tmp_path, monkeypatch):
+    """
+    Points the default KnowledgeBase and DecisionRepository at
+    tmp_path-backed instances for every test, so nothing ever reads
+    or writes the real benchmarks/knowledge_base.json or
+    logs/decisions.json on disk.
+    """
+
+    monkeypatch.setattr(
+        routing_engine_module,
+        "default_knowledge_base",
+        KnowledgeBase(path=tmp_path / "knowledge_base.json"),
+    )
+    monkeypatch.setattr(
+        routing_engine_module,
+        "default_hardware_provider",
+        FakeHardwareProvider(),
+    )
+
+    isolated_decision_repository = DecisionRepository(
+        path=tmp_path / "decisions.json"
+    )
+    monkeypatch.setattr(
+        routing_api_module,
+        "default_decision_repository",
+        isolated_decision_repository,
+    )
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_decision_repository",
+        isolated_decision_repository,
+    )
+
+    isolated_savings_ledger = SavingsLedger(path=tmp_path / "savings.json")
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_savings_ledger",
+        isolated_savings_ledger,
+    )
+    monkeypatch.setattr(
+        savings_api_module,
+        "default_savings_ledger",
+        isolated_savings_ledger,
+    )
+
+    isolated_response_cache = ResponseCache(path=tmp_path / "response_cache.json")
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_response_cache",
+        isolated_response_cache,
+    )
+
+    isolated_classifier = ModelAssistedComplexityClassifier(
+        cache=ClassificationCache(path=tmp_path / "complexity_classifications.json")
+    )
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_complexity_classifier",
+        isolated_classifier,
+    )
+
+    isolated_cloud_budget_ledger = CloudBudgetLedger(
+        path=tmp_path / "cloud_budget.json"
+    )
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_cloud_budget_ledger",
+        isolated_cloud_budget_ledger,
+    )
+    monkeypatch.setattr(
+        cloud_escalation_module,
+        "default_cloud_budget_ledger",
+        isolated_cloud_budget_ledger,
+    )
+
+    isolated_memory_store = MemoryStore(path=tmp_path / "project_memory.json")
+    monkeypatch.setattr(
+        chat_api_module,
+        "default_memory_store",
+        isolated_memory_store,
+    )
+
+
+@pytest.fixture
+def client() -> TestClient:
+    return TestClient(app)

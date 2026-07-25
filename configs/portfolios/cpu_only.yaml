@@ -1,0 +1,27 @@
+# Portfolio for the CPU_ONLY hardware tier (no usable GPU detected).
+# Conservative context length -- CPU inference is viable at these
+# sizes, but KV cache still competes with weights for RAM.
+# See docs/INNOVATION_PLAN_2026.md I-02 / section 1.1, 1.2.
+
+tier: cpu_only
+description: >-
+  No usable GPU detected -- CPU-only inference with small models and
+  a conservative context length.
+default_context_length: 4096
+# int8 KV roughly doubles usable context in a fixed memory budget on
+# this tier (docs/INNOVATION_PLAN_2026.md I-17 / section 1.8) --
+# recommended in LM Studio's load settings, not set remotely by LAIR.
+kv_cache_recommendation: int8
+models:
+  - name: "Phi-4-mini 3.8B"
+    lm_studio_search: "phi-4-mini"
+    role: generalist
+    notes: "Best small reasoner, explicitly CPU-friendly."
+  - name: "Llama 3.2 3B"
+    lm_studio_search: "llama-3.2-3b"
+    role: generalist
+    notes: "General chat, modest CPU footprint."
+  - name: "SmolLM3-3B"
+    lm_studio_search: "smollm3-3b"
+    role: reasoning
+    notes: "Fully open, dual-mode /think reasoning."
