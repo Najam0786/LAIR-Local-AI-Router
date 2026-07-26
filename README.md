@@ -2,6 +2,18 @@
 
 > **Build intelligently. Measure everything. Evolve continuously.**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.13+](https://img.shields.io/badge/Python-3.13%2B-blue.svg)](https://www.python.org/)
+[![Status: Alpha](https://img.shields.io/badge/Status-0.3.0--alpha-orange.svg)](CHANGELOG.md)
+[![100% Local](https://img.shields.io/badge/Data-100%25%20Local-brightgreen.svg)](#privacy--why-local-first)
+[![OpenAI Compatible](https://img.shields.io/badge/API-OpenAI--compatible-lightgrey.svg)](INSTRUCTIONS.md)
+
+> **Your prompts never leave your machine.** LAIR runs entirely on hardware you own,
+> talking only to a local inference backend (LM Studio) on `localhost`. No account,
+> no telemetry, no cloud call — unless you deliberately opt into the budget-capped
+> cloud escalation feature, which is off by default. See
+> [Privacy & why local-first](#privacy--why-local-first).
+
 ---
 
 ## Overview
@@ -30,6 +42,53 @@ LAIR decides the rest.
 
 ---
 
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**LAIR web UI — routing panel**
+Every request shows the full decision: candidate models, per-factor scores,
+provenance tags, and confidence — before you ever see the answer.
+
+<img src="assets/screenshots/lair-web-ui-routing-panel.png" alt="LAIR web UI showing a chat response next to the live routing panel with per-factor scores and provenance">
+
+</td>
+<td width="50%">
+
+**LAIR web UI — home**
+Streaming chat, voice in/out, document drag-and-drop, and a routing panel —
+all running against your own machine, nothing sent anywhere else.
+
+<img src="assets/screenshots/lair-web-ui-home.png" alt="LAIR web UI home screen with example prompts and an empty routing panel">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**LM Studio — models ready to route to**
+LAIR drives LM Studio headlessly (auto-start, auto-load, auto-evict) — this
+is what's running underneath, entirely on your machine.
+
+<img src="assets/screenshots/lmstudio-loaded-models.png" alt="LM Studio local server showing two loaded models ready to serve requests">
+
+</td>
+<td width="50%">
+
+**LM Studio — model catalog**
+Your downloaded models, sizes, and quantizations — LAIR reads this catalog
+to decide who's the best fit for each request.
+
+<img src="assets/screenshots/lmstudio-model-picker.png" alt="LM Studio model picker listing several downloaded local models with sizes and quantizations">
+
+</td>
+</tr>
+</table>
+
+---
+
 # Why LAIR?
 
 Two missions drive every decision in this project:
@@ -48,6 +107,31 @@ In service of that:
 | Fast Assistance | Qwen3 8B |
 
 Instead of manually switching models, LAIR automatically selects the best execution strategy — and tells you why.
+
+---
+
+# Privacy & why local-first
+
+LAIR's entire premise is that you should not have to trade your data — or your
+wallet — for good AI assistance.
+
+- **Nothing leaves your machine.** LAIR and LM Studio both run on `localhost`.
+  Your prompts, your documents, your code — none of it is sent to a cloud API,
+  logged externally, or used to train anything.
+- **No account, no telemetry, no phone-home.** There's nothing to sign up for
+  and nothing reporting usage back to anyone.
+- **Cloud is opt-in, capped, and never silent.** The only exception is the
+  optional hybrid cloud escalation feature (`ENABLE_CLOUD_ESCALATION`), which
+  is **off by default**. If you turn it on and set a budget, only genuinely
+  hard requests may escalate — and every such response is explicitly labeled
+  `lair_meta.routed_to_cloud=true`, never silent.
+- **All you need is a laptop.** `lair doctor` profiles your actual RAM, GPU,
+  and disk, then recommends a model portfolio sized to fit — LAIR is built to
+  run well on an ordinary 8–16GB machine, not just a high-end workstation.
+- **Everything is inspectable and revocable.** Local memory, cached
+  responses, and ingested documents are stored as plain local files you can
+  read, export, or delete — see `lair memory list/show/forget/export` in
+  [INSTRUCTIONS.md](INSTRUCTIONS.md#project-memory).
 
 ---
 
